@@ -15,7 +15,7 @@ object MessageDigestHook : BaseHook() {
             "isEqual", ByteArray::class.java, ByteArray::class.java
         )
         XposedHelper.hookBefore(isEqualMethod) { callback ->
-            if (Config.isBypassVerificationEnabled()) {
+            if (Config.isBypassVerificationEnabled() && CallerGate.isTrusted()) {
                 callback.returnAndSkip(true)
             }
         }

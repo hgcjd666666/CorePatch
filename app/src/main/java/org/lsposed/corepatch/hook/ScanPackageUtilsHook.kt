@@ -18,7 +18,7 @@ object ScanPackageUtilsHook : BaseHook() {
         val assertMinSignatureSchemeIsValidMethod =
             scanPackageUtilsClazz.declaredMethods.first { m -> m.name == "assertMinSignatureSchemeIsValid" }
         hookBefore(assertMinSignatureSchemeIsValidMethod) { callback ->
-            if (Config.isBypassVerificationEnabled()) {
+            if (Config.isBypassVerificationEnabled() && CallerGate.isTrusted()) {
                 callback.returnAndSkip(null)
             }
         }

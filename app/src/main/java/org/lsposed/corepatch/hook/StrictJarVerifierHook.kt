@@ -18,7 +18,7 @@ object StrictJarVerifierHook : BaseHook() {
         val verifyMessageDigestMethod =
             strictJarVerifierClazz.declaredMethods.first { m -> m.name == "verifyMessageDigest" && m.returnType == Boolean::class.java }
         hookBefore(verifyMessageDigestMethod) { callback ->
-            if (Config.isBypassVerificationEnabled()) {
+            if (Config.isBypassVerificationEnabled() && CallerGate.isTrusted()) {
                 callback.returnAndSkip(true)
             }
         }
@@ -35,7 +35,7 @@ object StrictJarVerifierHook : BaseHook() {
         val verifyMethod =
             strictJarVerifierClazz.declaredMethods.first { m -> m.name == "verify" && m.returnType == Boolean::class.java }
         hookBefore(verifyMethod) { callback ->
-            if (Config.isBypassVerificationEnabled()) {
+            if (Config.isBypassVerificationEnabled() && CallerGate.isTrusted()) {
                 callback.returnAndSkip(true)
             }
         }
@@ -45,7 +45,7 @@ object StrictJarVerifierHook : BaseHook() {
             strictJarVerifierClazz.declaredFields.first { f -> f.name == "signatureSchemeRollbackProtectionsEnforced" }
         signatureSchemeRollbackProtectionsEnforcedField.isAccessible = true
         hookAfter(strictJarVerifierConstructor) { callback ->
-            if (Config.isBypassVerificationEnabled()) {
+            if (Config.isBypassVerificationEnabled() && CallerGate.isTrusted()) {
                 signatureSchemeRollbackProtectionsEnforcedField.set(
                     callback.thisObject, false
                 )
@@ -67,7 +67,9 @@ object StrictJarVerifierHook : BaseHook() {
             "verifyBytes", ByteArray::class.java, ByteArray::class.java
         )
         hookAfter(verifyBytesMethod) { callback ->
-            if (Config.isBypassDigestEnabled() && !Config.isUsePreviousSignaturesEnabled()) {
+            if (Config.isBypassDigestEnabled() && !Config.isUsePreviousSignaturesEnabled()
+                && CallerGate.isTrusted()
+            ) {
                 val block = pkcs7Constructor.newInstance(callback.args[0])
                 val signerInfo = getSignerInfosMethod.invoke(block) as Array<*>
                 if (signerInfo.isEmpty()) return@hookAfter

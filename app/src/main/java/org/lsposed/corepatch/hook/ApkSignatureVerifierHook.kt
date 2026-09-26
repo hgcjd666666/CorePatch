@@ -86,7 +86,7 @@ object ApkSignatureVerifierHook : BaseHook() {
             .filter { method -> method.name == "verifyV1Signature" }
             .forEach { verifyV1SignatureMethod ->
                 hookAfter(verifyV1SignatureMethod) { callback ->
-                    if (Config.isBypassVerificationEnabled()) {
+                    if (Config.isBypassVerificationEnabled() && CallerGate.isTrusted()) {
                         val throwable = callback.throwable
                         var parseError: Int? = null
                         if (parseResultClazz != null &&
@@ -237,7 +237,7 @@ object ApkSignatureVerifierHook : BaseHook() {
                     "getMinimumSignatureSchemeVersionForTargetSdk", Int::class.java
                 )
             hookBefore(getMinimumSignatureSchemeVersionForTargetSdkMethod) { callback ->
-                if (Config.isBypassVerificationEnabled()) {
+                if (Config.isBypassVerificationEnabled() && CallerGate.isTrusted()) {
                     callback.returnAndSkip(0)
                 }
             }

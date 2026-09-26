@@ -35,7 +35,7 @@ object PackageManagerServiceUtilsHook : BaseHook() {
             packageManagerServiceUtilsClazz.declaredMethods.first { m -> m.name == "verifySignatures" && m.returnType == Boolean::class.java }
         if (!XposedHelper.deoptimize(verifySignaturesMethod)) log("failed to deoptimize verifySignatures")
         hookBefore(verifySignaturesMethod) { callback ->
-            if (Config.isBypassVerificationEnabled()) {
+            if (Config.isBypassVerificationEnabled() && CallerGate.isTrusted()) {
                 callback.returnAndSkip(false)
             }
         }
@@ -54,7 +54,9 @@ object PackageManagerServiceUtilsHook : BaseHook() {
                 }
                 .forEach { checkDowngradeMethod ->
                     hookBefore(checkDowngradeMethod) { callback ->
-                        if (Config.isBypassDowngradeEnabled()) callback.returnAndSkip(null)
+                        if (Config.isBypassDowngradeEnabled() && CallerGate.isTrusted()) {
+                            callback.returnAndSkip(null)
+                        }
                     }
                 }
         }
