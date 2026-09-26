@@ -55,11 +55,14 @@ class XposedMain : XposedModule() {
      * 每个 hook 都带稳定 id，框架会原子替换旧代的同 id hook，不会重复挂载。
      */
     override fun onHotReloaded(param: XposedModuleInterface.HotReloadedParam) {
-        super.onHotReloaded(param)
+        // 不要调用 super：默认实现会把旧 hook 全部 unhook，那样 setId 的原子替换
+        // 就变成"先删后建"，出现空窗期，中途失败还会让模块彻底失效。
         XposedHelper.setXposedModule(this)
         if (!param.isSystemServer) return
 
-        XposedHelper.setHostClassLoader(XposedHelper.resolveHostClassLoader())
+        val hostClassLoader = XposedHelper.resolveHostClassLoader()
+        XposedHelper.log("onHotReloaded: host class loader = $hostClassLoader")
+        XposedHelper.setHostClassLoader(hostClassLoader)
         XposedHelper.log("onHotReloaded: reinstalling hooks in ${param.processName}")
         installHooks()
     }

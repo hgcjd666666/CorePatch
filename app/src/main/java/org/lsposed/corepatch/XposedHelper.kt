@@ -91,25 +91,29 @@ object XposedHelper {
     fun hookBefore(
         member: Executable, callback: BeforeCallback
     ): XposedInterface.HookHandle {
-        return xposedModule.hook(member).setId(hookId(member))
+        return xposedModule.hook(member).setId(hookId(member, "before"))
             .intercept(CustomHooker(beforeCallback = callback))
     }
 
     fun hookAfter(
         executable: Executable, callback: AfterCallback
     ): XposedInterface.HookHandle {
-        return xposedModule.hook(executable).setId(hookId(executable))
+        return xposedModule.hook(executable).setId(hookId(executable, "after"))
             .intercept(CustomHooker(afterCallback = callback))
     }
 
     /**
      * 稳定的 hook 标识。API 102 起，同一 Executable 上相同 id 的新 hook 会原子替换旧的，
      * 所以热重载后新代码重装 hook 不会重复挂载，也无需自己 unhook 旧句柄。
+     *
+     * 必须把 before/after 计入 id：同一个方法上同时挂 before 与 after 的模块
+     * （例如 InstallCallerGateHook）如果共用一个 id，后注册的会原子替换先注册的，
+     * 直接导致其中一个逻辑不生效。
      */
-    private fun hookId(executable: Executable): String {
+    private fun hookId(executable: Executable, phase: String): String {
         val kind = if (executable is Method) "M" else "C"
         val params = executable.parameterTypes.joinToString(",") { it.name }
-        return "$kind:${executable.declaringClass.name}#${executable.name}($params)"
+        return "$phase:$kind:${executable.declaringClass.name}#${executable.name}($params)"
     }
 
     /**
