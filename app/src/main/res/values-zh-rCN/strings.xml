@@ -5,6 +5,8 @@
     <string name="bypass_downgrade">允许降级安装应用</string>
     <string name="bypass_downgrade_summary">允许应用在安装新版本的情况下直接覆盖安装旧版本</string>
     <string name="bypass_verification">禁用软件包管理器签名验证</string>
+    <string name="allow_unsigned_apk">允许安装未签名 APK</string>
+    <string name="allow_unsigned_apk_summary">允许安装完全不带签名的 APK（既无 v1 的 META-INF 签名，也无 v2/v3 签名块）。仅"签名校验不通过"的包<b>不需要</b>此项。\n<b>极易被检测</b>：任何应用提交一个未签名 APK、再读安装会话的 EXTRA_STATUS 就能确认它已开启。除非确实需要，否则请保持关闭。</string>
     <string name="bypass_verification_summary">关闭安装应用时的签名验证，可以安装被篡改的应用</string>
     <string name="bypass_resource_arsc_restrictions">绕过 resources.arsc 对齐限制</string>
     <string name="bypass_resource_arsc_restrictions_summary">允许在 Android 11 及以上版本安装 resources.arsc 已压缩或未按 4 字节对齐的 APK</string>

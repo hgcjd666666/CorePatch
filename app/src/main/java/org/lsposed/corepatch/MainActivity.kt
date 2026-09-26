@@ -59,6 +59,11 @@ class MainActivity : Activity() {
         val bypassVerification = SwitchData(
             getString(R.string.bypass_verification), getString(R.string.bypass_verification_summary), Config.BYPASS_VERIFICATION
         )
+        val allowUnsignedApk = SwitchData(
+            getString(R.string.allow_unsigned_apk),
+            getString(R.string.allow_unsigned_apk_summary),
+            Config.ALLOW_UNSIGNED_APK
+        )
         val bypassResourceArscRestrictions = SwitchData(
             getString(R.string.bypass_resource_arsc_restrictions),
             getString(R.string.bypass_resource_arsc_restrictions_summary),
@@ -96,6 +101,7 @@ class MainActivity : Activity() {
         val dataSet = arrayListOf(
             bypassDowngrade,
             bypassVerification,
+            allowUnsignedApk,
             bypassResourceArscRestrictions,
             bypassDigest,
             bypassExactSignatureMatch,

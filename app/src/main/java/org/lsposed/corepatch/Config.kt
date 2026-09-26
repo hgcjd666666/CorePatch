@@ -6,6 +6,7 @@ import org.lsposed.corepatch.XposedHelper.prefs
 object Config {
     const val BYPASS_DOWNGRADE = "downgrade"
     const val BYPASS_VERIFICATION = "bypass_verification"
+    const val ALLOW_UNSIGNED_APK = "allow_unsigned_apk"
     const val BYPASS_RESOURCE_ARSC_RESTRICTIONS = "bypass_resource_arsc_restrictions"
     const val BYPASS_DIGEST = "bypass_digest"
     const val BYPASS_EXACT_SIGNATURE_MATCH = "bypass_exact_sig_match"
@@ -18,6 +19,7 @@ object Config {
     private val allConfig = arrayOf(
         BYPASS_DOWNGRADE,
         BYPASS_VERIFICATION,
+        ALLOW_UNSIGNED_APK,
         BYPASS_RESOURCE_ARSC_RESTRICTIONS,
         BYPASS_DIGEST,
         USE_PREVIOUS_SIGNATURES,
@@ -38,6 +40,17 @@ object Config {
 
     fun isBypassVerificationEnabled(): Boolean {
         return prefs.getBoolean(BYPASS_VERIFICATION, false)
+    }
+
+    /**
+     * 是否允许安装「完全没有签名材料」的 APK。默认关闭。
+     *
+     * 这是最容易被检测的能力：任何应用提交一个未签名 APK、再读安装会话的
+     * EXTRA_STATUS，就能确认 pm 被改过。而「有签名但校验不通过」的包不需要
+     * 这一项 —— 它们走 isBypassVerificationEnabled() 那条路，检测面小得多。
+     */
+    fun isAllowUnsignedApkEnabled(): Boolean {
+        return prefs.getBoolean(ALLOW_UNSIGNED_APK, false)
     }
 
     fun isBypassResourceArscRestrictionsEnabled(): Boolean {

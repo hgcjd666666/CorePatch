@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.pm.PackageManager
 import android.content.pm.Signature
 import android.os.Build
+import android.util.Log
 import org.lsposed.corepatch.Config
 import org.lsposed.corepatch.Constant
 import org.lsposed.corepatch.XposedHelper.findClassIfExists
@@ -101,6 +102,24 @@ object ApkSignatureVerifierHook : BaseHook() {
                         }
 
                         if (throwable != null || parseError != null) {
+                            // 「完全没有签名材料」与「有签名但校验不通过」分开处理：
+                            // 前者是最容易被检测的能力（任何应用提交未签名包再读
+                            // EXTRA_STATUS 就能确认），只有显式开启才绕过；后者是用户
+                            // 真正需要的场景，按 bypass_verification 直接绕过。
+                            if (!Config.isAllowUnsignedApkEnabled()) {
+                                val apkPath =
+                                    callback.args[if (parseError == null) 0 else 1] as? String
+                                if (apkPath != null &&
+                                    !ApkSignatureMaterials.hasSignatureMaterial(apkPath)
+                                ) {
+                                    Log.i(
+                                        "CorePatch",
+                                        "skip unsigned apk (allow_unsigned_apk is off): $apkPath"
+                                    )
+                                    return@hookAfter
+                                }
+                            }
+
                             var signaturesBefore: Any? = null
                             // use previous signatures, get from package manager
                             if (Config.isUsePreviousSignaturesEnabled()) {
