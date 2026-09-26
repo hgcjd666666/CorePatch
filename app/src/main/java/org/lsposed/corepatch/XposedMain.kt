@@ -52,18 +52,40 @@ class XposedMain : XposedModule() {
     /**
      * 在新代码里续接。onModuleLoaded / onSystemServerStarting 都不会重放，所以这里要
      * 自己重新绑定框架、重新解析 host classloader，然后重装 hook。
-     * 每个 hook 都带稳定 id，框架会原子替换旧代的同 id hook，不会重复挂载。
+     *
+     * 宿主 classloader 必须从旧 hook 句柄反推：hook handle 的 executable 就是被 hook 的
+     * 真实方法，其 declaringClass 必然由加载目标类的那个 loader 加载。必须在 unhook
+     * 之前读取，unhook 之后 getExecutable() 可能失效。
+     * 实测 CCL、getDefaultClassLoader()、模块 loader 的 parent 链在 system_server 上都
+     * 拿不到能加载系统类的 loader。
      */
     override fun onHotReloaded(param: XposedModuleInterface.HotReloadedParam) {
-        // 不要调用 super：默认实现会把旧 hook 全部 unhook，那样 setId 的原子替换
-        // 就变成"先删后建"，出现空窗期，中途失败还会让模块彻底失效。
         XposedHelper.setXposedModule(this)
-        if (!param.isSystemServer) return
 
-        val hostClassLoader = XposedHelper.resolveHostClassLoader()
-        XposedHelper.log("onHotReloaded: host class loader = $hostClassLoader")
+        val oldHandles = param.oldHookHandles
+        var hostClassLoader: ClassLoader? = null
+        for (handle in oldHandles) {
+            val executable = runCatching { handle.executable }.getOrNull()
+            val loader = executable?.declaringClass?.classLoader
+            if (loader != null) {
+                hostClassLoader = loader
+                break
+            }
+        }
+
+        // 覆盖了默认实现就必须自己补上：卸载旧代次安装的全部 hook
+        oldHandles.forEach { runCatching { it.unhook() } }
+
+        XposedHelper.log(
+            "onHotReloaded: ${param.processName}, ${oldHandles.size} old hooks, loader=$hostClassLoader"
+        )
+        if (!param.isSystemServer) return
+        if (hostClassLoader == null) {
+            XposedHelper.log("onHotReloaded: no host classloader derivable from old hooks, skip reinstall")
+            return
+        }
+
         XposedHelper.setHostClassLoader(hostClassLoader)
-        XposedHelper.log("onHotReloaded: reinstalling hooks in ${param.processName}")
         installHooks()
     }
 

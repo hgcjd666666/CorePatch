@@ -116,25 +116,6 @@ object XposedHelper {
         return "$phase:$kind:${executable.declaringClass.name}#${executable.name}($params)"
     }
 
-    /**
-     * 热重载时 onSystemServerStarting 不会重放，需要在新代码里重新解析 system server
-     * 的类加载器。
-     */
-    fun resolveHostClassLoader(): ClassLoader {
-        val candidates = listOfNotNull(
-            runCatching { ClassLoader.getSystemClassLoader() }.getOrNull(),
-            runCatching {
-                Class.forName("com.android.server.pm.PackageManagerService").classLoader
-            }.getOrNull(),
-        )
-        return candidates.firstOrNull { loader ->
-            runCatching {
-                loader.loadClass("com.android.server.pm.PackageManagerService")
-                true
-            }.getOrDefault(false)
-        } ?: ClassLoader.getSystemClassLoader()
-    }
-
     fun log(message: String, throwable: Throwable? = null) {
         if (throwable != null) {
             xposedModule.log(Log.ERROR, "CorePatch", message, throwable)
