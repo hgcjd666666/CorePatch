@@ -65,14 +65,24 @@ class XposedMain : XposedModule() {
         XposedHelper.setXposedModule(this)
 
         val oldHandles = param.oldHookHandles
-        var hostClassLoader: ClassLoader? = null
+
+        // 宿主 classloader 从旧 hook 的 declaringClass 反推，但**不能取第一个**：
+        // CorePatch 同时 hook 了 boot classpath（ApkSignatureVerifier、SigningDetails 等）
+        // 和 SYSTEMSERVERCLASSPATH（com.android.server.pm.*）的类，前者的 declaringClass
+        // 挂在 BootClassLoader 上，拿它去 loadClass("com.android.server.pm.*") 必然
+        // ClassNotFoundException。所以要收集全部候选，挑出真正能加载系统服务类的那一个。
+        val candidates = LinkedHashSet<ClassLoader>()
         for (handle in oldHandles) {
-            val executable = runCatching { handle.executable }.getOrNull()
-            val loader = executable?.declaringClass?.classLoader
-            if (loader != null) {
-                hostClassLoader = loader
-                break
-            }
+            val executable = runCatching { handle.executable }.getOrNull() ?: continue
+            executable.declaringClass.classLoader?.let { candidates.add(it) }
+        }
+        runCatching { ClassLoader.getSystemClassLoader() }.getOrNull()?.let { candidates.add(it) }
+
+        val hostClassLoader = candidates.firstOrNull { loader ->
+            runCatching {
+                loader.loadClass("com.android.server.pm.PackageManagerService")
+                true
+            }.getOrDefault(false)
         }
 
         // 覆盖了默认实现就必须自己补上：卸载旧代次安装的全部 hook
@@ -80,11 +90,15 @@ class XposedMain : XposedModule() {
 
         Log.i(
             TAG,
-            "onHotReloaded: ${param.processName}, ${oldHandles.size} old hooks, loader=$hostClassLoader"
+            "onHotReloaded: ${param.processName}, ${oldHandles.size} old hooks, " +
+                "${candidates.size} loader candidates, host=$hostClassLoader"
         )
         if (!param.isSystemServer) return
         if (hostClassLoader == null) {
-            Log.w(TAG, "onHotReloaded: no host classloader derivable from old hooks, skip reinstall")
+            Log.w(
+                TAG,
+                "onHotReloaded: no candidate loader can load system server classes, skip reinstall"
+            )
             return
         }
 
