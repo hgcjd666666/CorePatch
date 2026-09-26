@@ -88,23 +88,51 @@ object XposedHelper {
         }
     }
 
+    /** 本代次已注册的 hook id，用于发现同 (executable, phase) 的重复注册 */
+    private val installedHookIds: MutableSet<String> =
+        java.util.Collections.synchronizedSet(mutableSetOf<String>())
+
     fun hookBefore(
         member: Executable, callback: BeforeCallback
     ): XposedInterface.HookHandle {
-        return xposedModule.hook(member).setId(hookId(member, "before"))
+        val id = hookId(member, "before")
+        registerHookId(id)
+        return xposedModule.hook(member).setId(id)
             .intercept(CustomHooker(beforeCallback = callback))
     }
 
     fun hookAfter(
         executable: Executable, callback: AfterCallback
     ): XposedInterface.HookHandle {
-        return xposedModule.hook(executable).setId(hookId(executable, "after"))
+        val id = hookId(executable, "after")
+        registerHookId(id)
+        return xposedModule.hook(executable).setId(id)
             .intercept(CustomHooker(afterCallback = callback))
     }
 
     /**
-     * 稳定的 hook 标识。API 102 起，同一 Executable 上相同 id 的新 hook 会原子替换旧的，
-     * 所以热重载后新代码重装 hook 不会重复挂载，也无需自己 unhook 旧句柄。
+     * 同一个 (executable, phase) 被注册两次时，后注册的会按 id 原子替换先注册的，
+     * 其中一个逻辑静默失效。这里只告警不抛异常：抛异常会让 hook 直接装不上，
+     * 比静默顶替更糟。每代次的注册表是新的，热重载后重新安装不会误报。
+     */
+    private fun registerHookId(id: String) {
+        if (!installedHookIds.add(id)) {
+            Log.w(
+                "CorePatch",
+                "duplicate hook id: later registration replaces the earlier one -> $id"
+            )
+        }
+    }
+
+    /**
+     * 稳定的 hook 标识。
+     *
+     * API 102 起，同一模块、同一 Executable 上相同 id 的新 hook 会原子替换旧的。但当前
+     * 热重载走的是"先全量 unhook 旧 handle、再重装"的路线（见 XposedMain.onHotReloaded），
+     * 装新 hook 时旧的已经被删掉，所以 id 此刻并不承担替换，它的作用是：
+     *   1. 给每个挂载点一个身份，配合上面的重复注册检查；
+     *   2. 保留 handle 反查键——将来若要消掉 unhook 与重装之间的空窗期而改用
+     *      HookHandle.replaceHook()，可用 handle.getId() 反解出 phase 与 executable。
      *
      * 必须把 before/after 计入 id：同一个方法上同时挂 before 与 after 的模块
      * （例如 InstallCallerGateHook）如果共用一个 id，后注册的会原子替换先注册的，
