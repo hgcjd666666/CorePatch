@@ -8,6 +8,7 @@ import org.lsposed.corepatch.hook.ApkSignatureVerifierHook
 import org.lsposed.corepatch.hook.ApkSigningBlockUtilsHook
 import org.lsposed.corepatch.hook.ApplicationInfoHook
 import org.lsposed.corepatch.hook.AssetManagerHook
+import org.lsposed.corepatch.hook.BaseHook
 import org.lsposed.corepatch.hook.InstallCallerGateHook
 import org.lsposed.corepatch.hook.InstallPackageHelperHook
 import org.lsposed.corepatch.hook.KeySetManagerServiceHook
@@ -36,9 +37,40 @@ class XposedMain : XposedModule() {
 
         XposedHelper.setHostClassLoader(param.classLoader)
 
-        printAllConfig()
+        installHooks()
+    }
 
-        val hooks = listOf(
+    /**
+     * API 102 热重载：在旧代码里决定是否放行。CorePatch 全部是 Java 层 hook，没有模块
+     * 自建的线程、native hook 或 JNI 全局引用，旧代可以安全退役。
+     */
+    override fun onHotReloading(param: XposedModuleInterface.HotReloadingParam): Boolean {
+        XposedHelper.log("onHotReloading: allow hot reload")
+        return true
+    }
+
+    /**
+     * 在新代码里续接。onModuleLoaded / onSystemServerStarting 都不会重放，所以这里要
+     * 自己重新绑定框架、重新解析 host classloader，然后重装 hook。
+     * 每个 hook 都带稳定 id，框架会原子替换旧代的同 id hook，不会重复挂载。
+     */
+    override fun onHotReloaded(param: XposedModuleInterface.HotReloadedParam) {
+        super.onHotReloaded(param)
+        XposedHelper.setXposedModule(this)
+        if (!param.isSystemServer) return
+
+        XposedHelper.setHostClassLoader(XposedHelper.resolveHostClassLoader())
+        XposedHelper.log("onHotReloaded: reinstalling hooks in ${param.processName}")
+        installHooks()
+    }
+
+    private fun installHooks() {
+        printAllConfig()
+        HOOKS.forEach { it.init() }
+    }
+
+    companion object {
+        private val HOOKS: List<BaseHook> = listOf(
             ApkSignatureVerifierHook,
             ApkSigningBlockUtilsHook,
             ApplicationInfoHook,
@@ -58,6 +90,5 @@ class XposedMain : XposedModule() {
             VerificationParamsHook,
             VerifyingSessionHook,
         )
-        hooks.forEach { it.init() }
     }
 }

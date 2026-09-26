@@ -91,13 +91,44 @@ object XposedHelper {
     fun hookBefore(
         member: Executable, callback: BeforeCallback
     ): XposedInterface.HookHandle {
-        return xposedModule.hook(member).intercept(CustomHooker(beforeCallback = callback))
+        return xposedModule.hook(member).setId(hookId(member))
+            .intercept(CustomHooker(beforeCallback = callback))
     }
 
     fun hookAfter(
         executable: Executable, callback: AfterCallback
     ): XposedInterface.HookHandle {
-        return xposedModule.hook(executable).intercept(CustomHooker(afterCallback = callback))
+        return xposedModule.hook(executable).setId(hookId(executable))
+            .intercept(CustomHooker(afterCallback = callback))
+    }
+
+    /**
+     * 稳定的 hook 标识。API 102 起，同一 Executable 上相同 id 的新 hook 会原子替换旧的，
+     * 所以热重载后新代码重装 hook 不会重复挂载，也无需自己 unhook 旧句柄。
+     */
+    private fun hookId(executable: Executable): String {
+        val kind = if (executable is Method) "M" else "C"
+        val params = executable.parameterTypes.joinToString(",") { it.name }
+        return "$kind:${executable.declaringClass.name}#${executable.name}($params)"
+    }
+
+    /**
+     * 热重载时 onSystemServerStarting 不会重放，需要在新代码里重新解析 system server
+     * 的类加载器。
+     */
+    fun resolveHostClassLoader(): ClassLoader {
+        val candidates = listOfNotNull(
+            runCatching { ClassLoader.getSystemClassLoader() }.getOrNull(),
+            runCatching {
+                Class.forName("com.android.server.pm.PackageManagerService").classLoader
+            }.getOrNull(),
+        )
+        return candidates.firstOrNull { loader ->
+            runCatching {
+                loader.loadClass("com.android.server.pm.PackageManagerService")
+                true
+            }.getOrDefault(false)
+        } ?: ClassLoader.getSystemClassLoader()
     }
 
     fun log(message: String, throwable: Throwable? = null) {
