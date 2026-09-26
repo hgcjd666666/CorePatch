@@ -23,6 +23,15 @@ import org.lsposed.corepatch.XposedHelper.hookBefore
  *
  * 只挂后者会漏掉 commit 阶段（实测在部分 ROM 上 InstallPackageHelper 的方法名匹配不到），
  * 只挂前者则依赖 session 与 install 是否同线程。两个都挂才稳。
+ *
+ * 注意：门控只服务于「解析层」的绕过 —— ApkSignatureVerifier / ApkSigningBlockUtils /
+ * StrictJarVerifier / MessageDigest / ScanPackageUtils。
+ * 「比对层」刻意不加门控：verifySignatures / checkCapability / checkCapabilityRecover /
+ * signaturesMatchExactly / hasCommonAncestor / checkDowngrade / KeySetManagerService /
+ * SharedUserSetting / doesSignatureMatchForPermissions。
+ * 理由：这些只在「已安装同名包」时才会被调用（verifySignatures 的第一件事就是判断
+ * pkgSetting 的签名），检测器提交一个未安装的探针包根本走不到那里；给它们加门控
+ * 收益为零，只会挡住用户自己的覆盖安装。
  */
 object InstallCallerGateHook : BaseHook() {
     override val name = "InstallCallerGateHook"

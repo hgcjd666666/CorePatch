@@ -56,9 +56,7 @@ object SharedUserSettingHook : BaseHook() {
             sharedUserSettingClazz.declaredMethods.first { m -> m.name == "removePackage" }
         hookBefore(removePackageMethod) { callback ->
             val thisObject = callback.thisObject ?: return@hookBefore
-            if (!Config.isBypassDigestEnabled() || !Config.isBypassSharedUserEnabled()
-                || !CallerGate.isTrusted()
-            ) {
+            if (!Config.isBypassDigestEnabled() || !Config.isBypassSharedUserEnabled()) {
                 return@hookBefore
             }
             val uidFlags = uidFlagsField.get(thisObject) as Int
@@ -109,9 +107,7 @@ object SharedUserSettingHook : BaseHook() {
             sharedUserSettingClazz.declaredMethods.first { m -> m.name == "addPackage" }
         hookBefore(addPackageMethod) { callback ->
             val thisObject = callback.thisObject ?: return@hookBefore
-            if (!Config.isBypassDigestEnabled() || !Config.isBypassSharedUserEnabled()
-                || !CallerGate.isTrusted()
-            ) {
+            if (!Config.isBypassDigestEnabled() || !Config.isBypassSharedUserEnabled()) {
                 return@hookBefore
             }
             val uidFlags = uidFlagsField.get(thisObject) as Int

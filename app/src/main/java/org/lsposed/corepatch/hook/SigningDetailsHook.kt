@@ -26,7 +26,7 @@ object SigningDetailsHook : BaseHook() {
             "checkCapability", signingDetailsClazz, Int::class.java
         )
         hookBefore(checkCapabilityMethod) { callback ->
-            if (Config.isBypassDigestEnabled() && CallerGate.isTrusted()) {
+            if (Config.isBypassDigestEnabled()) {
                 if (callback.args[1] != 4 && callback.args[1] != 16) {
                     callback.returnAndSkip(true)
                 }
@@ -40,7 +40,7 @@ object SigningDetailsHook : BaseHook() {
             "checkCapabilityRecover", signingDetailsClazz, Int::class.java
         )
         hookBefore(checkCapabilityRecoverMethod) { callback ->
-            if (Config.isBypassDigestEnabled() && CallerGate.isTrusted()) {
+            if (Config.isBypassDigestEnabled()) {
                 // Don't handle PERMISSION (grant SIGNATURE permissions to pkgs with this cert)
                 // Or applications will have all privileged permissions
                 // https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/content/pm/PackageParser.java;l=5947
@@ -59,7 +59,6 @@ object SigningDetailsHook : BaseHook() {
             )
             hookBefore(hasCommonAncestorMethod) { callback ->
                 if (Config.isBypassDigestEnabled() && Config.isBypassSharedUserEnabled()
-                    && CallerGate.isTrusted()
                     // because of LSPosed's bug, we can't hook verifySignatures while deoptimize it
                     && Arrays.stream(
                         Thread.currentThread().stackTrace
@@ -73,7 +72,7 @@ object SigningDetailsHook : BaseHook() {
         // https://cs.android.com/android/platform/superproject/+/android-9.0.0_r61:frameworks/base/core/java/android/content/pm/PackageParser.java;l=6036
         val signaturesMatchExactlyMethod = signingDetailsClazz.getDeclaredMethod("signaturesMatchExactly", signingDetailsClazz)
         hookBefore(signaturesMatchExactlyMethod) { callback ->
-            if (Config.isBypassExactSignatureMatch() && CallerGate.isTrusted()) {
+            if (Config.isBypassExactSignatureMatch()) {
                 callback.returnAndSkip(true)
             }
         }

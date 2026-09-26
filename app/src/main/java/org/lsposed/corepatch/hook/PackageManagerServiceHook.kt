@@ -26,7 +26,7 @@ object PackageManagerServiceHook : BaseHook() {
         val checkDowngradeVoidMethod =
             packageManagerServiceClazz.declaredMethods.first { m -> m.name == "checkDowngrade" && m.returnType == Void.TYPE }
         hookBefore(checkDowngradeVoidMethod) { callback ->
-            if (Config.isBypassDowngradeEnabled() && CallerGate.isTrusted()) {
+            if (Config.isBypassDowngradeEnabled()) {
                 if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
                     val before = callback.args[0]!!
                     val packageParserPackageClazz = before.javaClass
@@ -53,9 +53,7 @@ object PackageManagerServiceHook : BaseHook() {
             val doesSignatureMatchForPermissionsMethod =
                 packageManagerServiceClazz.declaredMethods.first { m -> m.name == "doesSignatureMatchForPermissions" }
             hookAfter(doesSignatureMatchForPermissionsMethod) { callback ->
-                if (Config.isBypassDigestEnabled() && Config.isUsePreviousSignaturesEnabled()
-                    && CallerGate.isTrusted()
-                ) {
+                if (Config.isBypassDigestEnabled() && Config.isUsePreviousSignaturesEnabled()) {
                     if (callback.result == false) {
                         val getPackageNameMethod =
                             callback.args[1]!!.javaClass.declaredMethods.first { m -> m.name == "getPackageName" }
@@ -74,7 +72,7 @@ object PackageManagerServiceHook : BaseHook() {
             val checkDowngradeBooleanMethod =
                 packageManagerServiceClazz.declaredMethods.first { m -> m.name == "checkDowngrade" && m.returnType == Boolean::class.java }
             hookBefore(checkDowngradeBooleanMethod) { callback ->
-                if (Config.isBypassDowngradeEnabled() && CallerGate.isTrusted()) {
+                if (Config.isBypassDowngradeEnabled()) {
                     callback.returnAndSkip(true)
                 }
             }

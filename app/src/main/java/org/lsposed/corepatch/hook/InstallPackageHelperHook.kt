@@ -18,9 +18,7 @@ object InstallPackageHelperHook : BaseHook() {
         val doesSignatureMatchForPermissionsMethod =
             installPackageHelperClazz.declaredMethods.first { m -> m.name == "doesSignatureMatchForPermissions" }
         hookAfter(doesSignatureMatchForPermissionsMethod) { callback ->
-            if (Config.isBypassDigestEnabled() && Config.isUsePreviousSignaturesEnabled()
-                && CallerGate.isTrusted()
-            ) {
+            if (Config.isBypassDigestEnabled() && Config.isUsePreviousSignaturesEnabled()) {
                 // If we decide to crack this then at least make sure they are same apks, avoid another one that tries to impersonate.
                 if (callback.result == false) {
                     val getPackageNameMethod =

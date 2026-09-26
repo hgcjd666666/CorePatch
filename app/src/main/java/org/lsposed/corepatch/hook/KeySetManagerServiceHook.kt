@@ -23,7 +23,7 @@ object KeySetManagerServiceHook : BaseHook() {
                 m.name == "shouldCheckUpgradeKeySetLocked" && m.returnType == Boolean::class.java
             }
         hookBefore(shouldCheckUpgradeKeySetLockedMethod) { callback ->
-            if (Config.isBypassDigestEnabled() && CallerGate.isTrusted() && Arrays.stream(
+            if (Config.isBypassDigestEnabled() && Arrays.stream(
                     Thread.currentThread().stackTrace
                 )
                     // https://cs.android.com/android/platform/superproject/+/android-9.0.0_r61:frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java;l=17068
@@ -55,7 +55,7 @@ object KeySetManagerServiceHook : BaseHook() {
             m.name == "checkUpgradeKeySetLocked" && m.returnType == Boolean::class.java
         }
         hookBefore(checkUpgradeKeySetLockedMethod) { callback ->
-            if (Config.isBypassDigestEnabled() && CallerGate.isTrusted() && shouldBypass.get() == true) {
+            if (Config.isBypassDigestEnabled() && shouldBypass.get() == true) {
                 callback.returnAndSkip(true)
             }
         }
