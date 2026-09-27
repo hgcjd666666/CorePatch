@@ -41,11 +41,15 @@ object PackageManagerServiceUtilsHook : BaseHook() {
         )
         hookBefore(verifySignaturesMethod) { callback ->
             val pkgName = packageNameOf(callback.args.firstOrNull())
+            // 诊断：这个方法拿不到 APK 路径/sessionId，能否门控完全取决于 install 阶段的
+            // ThreadLocal 是否可靠，先把实际值打出来（只观察，不改变行为）
+            if (reportedNotBypassed.add("trusted-probe:$pkgName")) {
+                XposedHelper.log(
+                    "verifySignatures: callerTrusted=${CallerGate.isTrusted()}, pkg=$pkgName"
+                )
+            }
             if (Config.isBypassVerificationEnabled()) {
-                XposedHelper.log("verifySignatures: BYPASSED, pkg=$pkgName")
                 callback.returnAndSkip(false)
-            } else if (reportedNotBypassed.add(pkgName ?: "<unknown>")) {
-                XposedHelper.log("verifySignatures: NOT bypassed (bypass_verification=false), pkg=$pkgName")
             }
         }
 
