@@ -38,6 +38,10 @@ object CallerGate {
         "com.google.android.permissioncontroller",
         "com.miui.packageinstaller",
         "com.samsung.android.packageinstaller",
+        // 第三方安装器 / 文件管理器：用户常拿它们装改过的包。
+        // 这些身份同样由 Binder 强制（createSessionInternal 的 mAppOps.checkPackage
+        // 会拒绝伪造），信任它们与信任系统安装器等价，不增加检测面。
+        "bin.mt.plus", // MT 管理器
     )
 
     /**
