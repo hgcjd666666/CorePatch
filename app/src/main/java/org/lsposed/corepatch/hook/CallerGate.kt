@@ -127,7 +127,12 @@ object CallerGate {
      */
     fun rememberSession(session: Any?) {
         if (session == null) return
-        val id = sessionIdOf(session) ?: return
+        val id = sessionIdOf(session)
+        if (id == null) {
+            // 读不到就写不进表，install 阶段会查不到而退回按 uid 判定，必须可见
+            alreadyReported("cannot read sessionId from " + session.javaClass.name, -1, null)
+            return
+        }
         val trusted = isTrustedOwner(session)
         sessionTrust[id] = trusted to (System.currentTimeMillis() + SESSION_TRUST_TTL_MS)
         pruneSessions()
@@ -176,10 +181,24 @@ object CallerGate {
         return entry.first
     }
 
-    /** PackageInstallerSession 上是 sessionId 字段，InstallRequest 上是 getSessionId() 方法 */
+    /**
+     * sessionId 的取法：PackageInstallerSession 上是字段（各版本可见性/名字略有差异），
+     * InstallRequest 上是 getSessionId()。两种都试，字段用 declaredField 以免可见性变化。
+     */
     private fun sessionIdOf(owner: Any): Int? {
-        runCatching { return owner.javaClass.getField("sessionId").getInt(owner) }
-        runCatching { return owner.javaClass.getMethod("getSessionId").invoke(owner) as Int }
+        for (fieldName in arrayOf("sessionId", "mSessionId")) {
+            runCatching {
+                val field = owner.javaClass.getDeclaredField(fieldName)
+                field.isAccessible = true
+                return field.getInt(owner)
+            }
+        }
+        for (methodName in arrayOf("getSessionId", "getSessionID")) {
+            runCatching {
+                val value = owner.javaClass.getMethod(methodName).invoke(owner) as? Int
+                if (value != null) return value
+            }
+        }
         return null
     }
 
