@@ -7,6 +7,7 @@ object Config {
     const val BYPASS_DOWNGRADE = "downgrade"
     const val BYPASS_VERIFICATION = "bypass_verification"
     const val ALLOW_UNSIGNED_APK = "allow_unsigned_apk"
+    const val STRICT_CALLER_GATE = "strict_caller_gate"
     const val BYPASS_RESOURCE_ARSC_RESTRICTIONS = "bypass_resource_arsc_restrictions"
     const val BYPASS_DIGEST = "bypass_digest"
     const val BYPASS_EXACT_SIGNATURE_MATCH = "bypass_exact_sig_match"
@@ -20,6 +21,7 @@ object Config {
         BYPASS_DOWNGRADE,
         BYPASS_VERIFICATION,
         ALLOW_UNSIGNED_APK,
+        STRICT_CALLER_GATE,
         BYPASS_RESOURCE_ARSC_RESTRICTIONS,
         BYPASS_DIGEST,
         USE_PREVIOUS_SIGNATURES,
@@ -51,6 +53,19 @@ object Config {
      */
     fun isAllowUnsignedApkEnabled(): Boolean {
         return prefs.getBoolean(ALLOW_UNSIGNED_APK, false)
+    }
+
+    /**
+     * 严格调用者门控：只信任 root(0) 与 shell(2000) 发起的安装，
+     * 把信任面收到最小。代价是用系统安装器点击安装不再应用绕过，需要改用
+     * pm install / adb install。
+     *
+     * 注意：普通应用无法伪造系统安装器的 UID（createSessionInternal 里有
+     * mAppOps.checkPackage 校验），所以这个开关不改变"能否被检测"，
+     * 只影响用户自己的安装方式。
+     */
+    fun isStrictCallerGateEnabled(): Boolean {
+        return prefs.getBoolean(STRICT_CALLER_GATE, false)
     }
 
     fun isBypassResourceArscRestrictionsEnabled(): Boolean {

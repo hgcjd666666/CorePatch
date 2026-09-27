@@ -11,6 +11,8 @@
     <string name="bypass_resource_arsc_restrictions">绕过 resources.arsc 对齐限制</string>
     <string name="bypass_resource_arsc_restrictions_summary">允许在 Android 11 及以上版本安装 resources.arsc 已压缩或未按 4 字节对齐的 APK</string>
     <string name="bypass_digest">禁用 APK 签名验证</string>
+    <string name="strict_caller_gate">严格调用者门控：只信任 root 与 shell</string>
+    <string name="strict_caller_gate_summary">开启后，只有 root / shell 发起的安装（su -c pm install、adb install、pm install）才应用签名绕过；用系统安装器点击安装将不再生效，需要改用命令行。\n注意：普通应用无法伪造系统安装器的 UID，所以此项<b>不会</b>改变可被检测的程度，只是把信任面收到最小。</string>
     <string name="bypass_digest_summary">允许直接覆盖安装同包名不同签名的应用</string>
     <string name="bypass_exact_signature_match">禁用唯一签名匹配</string>
     <string name="bypass_exact_signature_match_summary">禁用多个 APK 之间的唯一签名匹配，从而允许安装应用时每个分包 APK 使用不同签名。仅在确有必要时再启用此项功能！</string>

@@ -1,6 +1,7 @@
 package org.lsposed.corepatch.hook
 
 import android.util.Log
+import org.lsposed.corepatch.Config
 import java.util.Collections
 
 /**
@@ -87,13 +88,18 @@ object CallerGate {
         if (owner == null) return false
         val uid = installerUidOf(owner)
         val pkg = installerPackageNameOf(owner)
-        if (uid == ROOT_UID || uid == SYSTEM_UID || uid == SHELL_UID) {
+
+        // root 与 shell 永远信任：pm install / adb install 走的就是这两个身份
+        if (uid == ROOT_UID || uid == SHELL_UID) {
             alreadyReported("trusted", uid, pkg)
             return true
         }
-        if (pkg != null && TRUSTED_INSTALLERS.contains(pkg)) {
-            alreadyReported("trusted", uid, pkg)
-            return true
+        // 严格模式下只认 root/shell，信任面收到最小
+        if (!Config.isStrictCallerGateEnabled()) {
+            if (uid == SYSTEM_UID || (pkg != null && TRUSTED_INSTALLERS.contains(pkg))) {
+                alreadyReported("trusted", uid, pkg)
+                return true
+            }
         }
         alreadyReported("skipped", uid, pkg)
         return false
