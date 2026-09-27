@@ -2,6 +2,7 @@ package org.lsposed.corepatch
 
 import android.annotation.SuppressLint
 import android.graphics.Point
+import android.util.Log
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Executable
