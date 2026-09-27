@@ -209,7 +209,10 @@ object ApkSignatureVerifierHook : BaseHook() {
                                         runCatching { closeMethod.invoke(originalJarFile) }
                                     }
                                 } catch (t: Throwable) {
-                                    log("Unexpected error while parsing signatures", t)
+                                    // 未签名或只有 v2/v3 签名的 APK 没有 META-INF，
+                                    // 构造 StrictJarFile 必然失败，属于可预期分支：
+                                    // 退回调用的兜底签名即可，不必报错误级别日志
+                                    log("cannot reuse a v1 signature from this APK: ${t.message}")
                                 }
                             }
 
