@@ -18,7 +18,10 @@ object ScanPackageUtilsHook : BaseHook() {
         val assertMinSignatureSchemeIsValidMethod =
             scanPackageUtilsClazz.declaredMethods.first { m -> m.name == "assertMinSignatureSchemeIsValid" }
         hookBefore(assertMinSignatureSchemeIsValidMethod) { callback ->
-            if (Config.isBypassVerificationEnabled() && CallerGate.isTrusted()) {
+            // 这个方法在 install 阶段执行，那时没有 session 的线程上下文，
+            // 所以要能从 AndroidPackage 取到 APK 路径、按 sessionId 反查
+            val trusted = CallerGate.isTrustedFor(callback.args.firstOrNull())
+            if (Config.isBypassVerificationEnabled() && trusted) {
                 callback.returnAndSkip(null)
             }
         }

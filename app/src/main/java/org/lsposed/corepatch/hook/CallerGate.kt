@@ -105,6 +105,35 @@ object CallerGate {
         }
     }
 
+    /**
+     * 统一的信任判定，供各解析点使用：
+     *  1. 当前线程有安装事务上下文（session/install 入口设置的 ThreadLocal）；
+     *  2. 或者能从候选对象得到 APK 路径，且该 sessionId 在表中被标记为可信。
+     *
+     * candidate 可以是路径字符串，也可以是带路径的包对象（AndroidPackage / ParsedPackage
+     * 等的 getBaseApkPath / getPath / getCodePath）。第二个来源不依赖线程上下文，
+     * 所以在 install 阶段（那里拿不到 session 的 ThreadLocal）也能成立。
+     */
+    fun isTrustedFor(candidate: Any?): Boolean {
+        if (isTrusted()) return true
+        val path = when (candidate) {
+            null -> null
+            is String -> candidate
+            else -> apkPathOf(candidate)
+        }
+        return isTrustedApkPath(path)
+    }
+
+    private fun apkPathOf(pkg: Any): String? {
+        for (methodName in arrayOf("getBaseApkPath", "getPath", "getCodePath")) {
+            runCatching {
+                val path = pkg.javaClass.getMethod(methodName).invoke(pkg) as? String
+                if (path != null) return path
+            }
+        }
+        return null
+    }
+
     /** 按 APK 路径反查该次安装是否可信（路径形如 /data/app/vmdl<sessionId>.tmp/...） */
     fun isTrustedApkPath(apkPath: String?): Boolean {
         val id = sessionIdFromPath(apkPath) ?: return false
