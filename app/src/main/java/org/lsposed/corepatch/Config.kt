@@ -56,13 +56,11 @@ object Config {
     }
 
     /**
-     * 严格调用者门控：只信任 root(0) 与 shell(2000) 发起的安装，
-     * 把信任面收到最小。代价是用系统安装器点击安装不再应用绕过，需要改用
-     * pm install / adb install。
+     * 严格调用者门控：不额外信任 system(1000) 身份发起的安装。
      *
-     * 注意：普通应用无法伪造系统安装器的 UID（createSessionInternal 里有
-     * mAppOps.checkPackage 校验），所以这个开关不改变"能否被检测"，
-     * 只影响用户自己的安装方式。
+     * root / shell / 系统安装器始终被信任（系统安装器的 UID 不可伪造，
+     * 信任它不增加检测面），这个开关只影响"是否额外信任以 system 身份提交安装的
+     * 系统组件"。
      */
     fun isStrictCallerGateEnabled(): Boolean {
         return prefs.getBoolean(STRICT_CALLER_GATE, false)

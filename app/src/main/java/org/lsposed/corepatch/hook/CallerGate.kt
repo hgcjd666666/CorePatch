@@ -187,17 +187,26 @@ object CallerGate {
         val uid = installerUidOf(owner)
         val pkg = installerPackageNameOf(owner)
 
-        // root 与 shell 永远信任：pm install / adb install 走的就是这两个身份
+        // root 与 shell：pm install / adb install / su -c pm install
         if (uid == ROOT_UID || uid == SHELL_UID) {
             alreadyReported("trusted", uid, pkg)
             return true
         }
-        // 严格模式下只认 root/shell，信任面收到最小
-        if (!Config.isStrictCallerGateEnabled()) {
-            if (uid == SYSTEM_UID || (pkg != null && TRUSTED_INSTALLERS.contains(pkg))) {
-                alreadyReported("trusted", uid, pkg)
-                return true
-            }
+        // 系统安装器：点击安装走的是它。installerPackageName 由
+        // PackageInstallerService.createSessionInternal 的
+        // mAppOps.checkPackage(callingUid, ...) 强制属于调用者，普通应用伪写成
+        // 安装器包名会抛 SecurityException，所以按包名判断是安全的。
+        // 用包名而不是缓存的 UID，安装器自身更新（覆盖安装 UID 不变）或换 ROM
+        // 都只需要维护这个名单即可。
+        // 无论是否开启严格模式都信任它：它的 UID 不可伪造，信任它不增加检测面。
+        if (pkg != null && TRUSTED_INSTALLERS.contains(pkg)) {
+            alreadyReported("trusted", uid, pkg)
+            return true
+        }
+        // 严格模式额外排除 system(1000)：部分 ROM 的系统组件以该身份提交安装
+        if (!Config.isStrictCallerGateEnabled() && uid == SYSTEM_UID) {
+            alreadyReported("trusted", uid, pkg)
+            return true
         }
         alreadyReported("skipped", uid, pkg)
         return false
