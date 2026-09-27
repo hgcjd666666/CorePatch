@@ -86,12 +86,23 @@ object CallerGate {
     private fun isTrustedOwner(owner: Any?): Boolean {
         if (owner == null) return false
         val uid = installerUidOf(owner)
-        if (uid == ROOT_UID || uid == SYSTEM_UID || uid == SHELL_UID) return true
         val pkg = installerPackageNameOf(owner)
-        if (pkg != null && TRUSTED_INSTALLERS.contains(pkg)) return true
-        if (reported.add("$uid/$pkg")) {
-            Log.i(TAG, "caller gate: bypass skipped for installer uid=$uid pkg=$pkg")
+        if (uid == ROOT_UID || uid == SYSTEM_UID || uid == SHELL_UID) {
+            alreadyReported("trusted", uid, pkg)
+            return true
         }
+        if (pkg != null && TRUSTED_INSTALLERS.contains(pkg)) {
+            alreadyReported("trusted", uid, pkg)
+            return true
+        }
+        alreadyReported("skipped", uid, pkg)
+        return false
+    }
+
+    /** 同一 (结论, uid, 包名) 只记一次，避免探针循环或开机扫描刷屏 */
+    private fun alreadyReported(verdict: String, uid: Int, pkg: String?): Boolean {
+        if (!reported.add("$verdict:$uid/$pkg")) return true
+        Log.i(TAG, "caller gate: $verdict, installer uid=$uid pkg=$pkg")
         return false
     }
 
