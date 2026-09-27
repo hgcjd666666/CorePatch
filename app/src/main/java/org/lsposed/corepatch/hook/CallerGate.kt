@@ -243,17 +243,19 @@ object CallerGate {
             return true
         }
         // 系统安装器：按 UID 判定（见 installerUids 的说明）。
-        // 无论是否开启严格模式都信任它：UID 由内核分配，普通应用伪造不了，
-        // 信任它不增加检测面。
-        if (uid in installerUids) {
-            alreadyReported("trusted(system installer)", uid, pkg)
-            return true
-        }
-        // 兜底：某些 ROM 的安装器以应用 UID 运行并把自己标成名单里的包名。
-        // 这条只在调用者没有能力伪写时成立（普通应用伪写会被 mAppOps.checkPackage 拒绝）。
-        if (pkg != null && INSTALLER_PACKAGES.contains(pkg) && uid !in installerUids) {
-            alreadyReported("trusted(installer name)", uid, pkg)
-            return true
+        // 可以用 distrust_system_installer 关掉这份信任：任何应用都能通过 Intent
+        // 拉起系统安装器诱导用户点击安装，关掉之后只能用命令行安装。
+        if (!Config.isDistrustSystemInstallerEnabled()) {
+            if (uid in installerUids) {
+                alreadyReported("trusted(system installer)", uid, pkg)
+                return true
+            }
+            // 兜底：某些 ROM 的安装器以应用 UID 运行并把自己标成名单内包名。
+            // 只在调用者无力伪写时成立（普通应用伪写会被 mAppOps.checkPackage 拒绝）。
+            if (pkg != null && INSTALLER_PACKAGES.contains(pkg) && uid !in installerUids) {
+                alreadyReported("trusted(installer name)", uid, pkg)
+                return true
+            }
         }
         // 严格模式额外排除 system(1000)：部分 ROM 的系统组件以该身份提交安装
         if (!Config.isStrictCallerGateEnabled() && uid == SYSTEM_UID) {

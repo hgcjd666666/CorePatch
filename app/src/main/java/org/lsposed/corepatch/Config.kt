@@ -8,6 +8,7 @@ object Config {
     const val BYPASS_VERIFICATION = "bypass_verification"
     const val ALLOW_UNSIGNED_APK = "allow_unsigned_apk"
     const val STRICT_CALLER_GATE = "strict_caller_gate"
+    const val DISTRUST_SYSTEM_INSTALLER = "distrust_system_installer"
     const val BYPASS_RESOURCE_ARSC_RESTRICTIONS = "bypass_resource_arsc_restrictions"
     const val BYPASS_DIGEST = "bypass_digest"
     const val BYPASS_EXACT_SIGNATURE_MATCH = "bypass_exact_sig_match"
@@ -22,6 +23,7 @@ object Config {
         BYPASS_VERIFICATION,
         ALLOW_UNSIGNED_APK,
         STRICT_CALLER_GATE,
+        DISTRUST_SYSTEM_INSTALLER,
         BYPASS_RESOURCE_ARSC_RESTRICTIONS,
         BYPASS_DIGEST,
         BYPASS_EXACT_SIGNATURE_MATCH,
@@ -66,6 +68,17 @@ object Config {
      * 信任它不增加检测面），这个开关只影响"是否额外信任以 system 身份提交安装的
      * 系统组件"。
      */
+    /**
+     * 不信任系统安装器发起的安装。
+     *
+     * 任何应用都能通过 Intent 拉起系统安装器，诱导用户点"安装"，那条路的身份就是
+     * 系统安装器。开启此项后只有 root / shell 的安装被信任，只能用
+     * su -c pm install / adb install 安装。
+     */
+    fun isDistrustSystemInstallerEnabled(): Boolean {
+        return prefs.getBoolean(DISTRUST_SYSTEM_INSTALLER, false)
+    }
+
     fun isStrictCallerGateEnabled(): Boolean {
         return prefs.getBoolean(STRICT_CALLER_GATE, false)
     }
