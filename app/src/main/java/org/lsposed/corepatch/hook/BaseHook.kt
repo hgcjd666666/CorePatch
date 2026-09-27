@@ -22,8 +22,7 @@ open class BaseHook {
     fun init() {
         if (inited) return
         inited = true
-        XposedHelper.log("[$name] init: $name")
+        // 只在挂载失败时输出（hookInternal 内部已处理），避免每个 hook 刷两行
         hookInternal()
-        XposedHelper.log("[$name] init: $name done")
     }
 }

@@ -24,16 +24,20 @@ object Config {
         STRICT_CALLER_GATE,
         BYPASS_RESOURCE_ARSC_RESTRICTIONS,
         BYPASS_DIGEST,
+        BYPASS_EXACT_SIGNATURE_MATCH,
         USE_PREVIOUS_SIGNATURES,
         ALLOW_HIDDEN_APIS_FOR_SYSTEM_APPS,
         BYPASS_SHARED_USER,
+        DISABLE_VERIFICATION_AGENT,
         BYPASS_BLOCK
     )
 
+    /** 只列开启的开关，压成一行，免得每次热重载刷十几行 */
     fun printAllConfig() {
-        allConfig.forEach {
-            XposedHelper.log("$it: ${prefs.getBoolean(it, false)}")
-        }
+        val enabled = allConfig.filter { prefs.getBoolean(it, false) }
+        XposedHelper.log(
+            "config: " + if (enabled.isEmpty()) "(all off)" else enabled.joinToString(", ")
+        )
     }
 
     fun isBypassDowngradeEnabled(): Boolean {
