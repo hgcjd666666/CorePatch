@@ -39,6 +39,22 @@ object PackageManagerServiceUtilsHook : BaseHook() {
                 "bypass_verification=${Config.isBypassVerificationEnabled()}, " +
                 "method=${verifySignaturesMethod.toGenericString()}"
         )
+        // 这里刻意不加调用者门控，理由与残留风险：
+        //
+        // 不加的理由：比对层只在"已安装同名包"时才会被调用，而解析层
+        // （ApkSignatureVerifier 等）已经有门控，未签名/读不出证书的探针包在解析阶段
+        // 就被挡回去了，根本走不到这里。
+        //
+        // 已知残留（未实测）：若有人构造一个"与已安装应用同包名、签名有效但与已装包
+        // 不同"的 APK，并以普通应用身份提交，本方法会放行 —— 原生返回
+        // STATUS_FAILURE_INCOMPATIBLE(7)，本机返回 STATUS_PENDING_USER_ACTION(-1)，
+        // 据此可以判断包管理服务被改过。同一条链路上 SigningDetailsHook 的
+        // checkCapability / checkCapabilityRecover、KeySetManagerServiceHook、
+        // SharedUserSettingHook、checkDowngrade 也都撤了门控，情况相同。
+        //
+        // 如需堵住：在这几个 hook 上加 CallerGate.isTrustedFor(...) 即可。代价是
+        // "禁用 APK 签名验证"的语义会从"允许覆盖安装同包名不同签名"变成
+        // "只允许可信发起者这么做"。
         hookBefore(verifySignaturesMethod) { callback ->
             val pkgName = packageNameOf(callback.args.firstOrNull())
             // 诊断：这个方法拿不到 APK 路径/sessionId，能否门控完全取决于 install 阶段的

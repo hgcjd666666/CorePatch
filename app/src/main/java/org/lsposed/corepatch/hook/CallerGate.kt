@@ -49,6 +49,10 @@ object CallerGate {
      * installerPackageName=bin.mt.plus 而 installerUid=10218（系统安装器），
      * 因为 MT 管理器把安装委托给了系统安装器。
      * 安装器自身更新（覆盖安装）不会改变 UID，所以解析一次即可。
+     *
+     * 注意：这里调的是同进程的 IPackageManager，会在当前线程直接执行 PM 的代码。
+     * 首次解析发生在 session 阶段（session 的 handler 线程，不持有 PM 的锁），实测正常；
+     * 解析失败时退化为空集，只影响安装器那一条分支。
      */
     private val installerUids: Set<Int> by lazy { resolveInstallerUids() }
 
@@ -68,7 +72,7 @@ object CallerGate {
                     ?.let { result.add(it) }
             }
         }
-        alreadyReported("resolved installer uids=$result", -1, null)
+        XposedHelper.log("caller gate: resolved installer uids=$result")
         return result
     }
 
@@ -222,6 +226,11 @@ object CallerGate {
         sessionTrust.entries.removeAll { it.value.second < now }
     }
 
+    /**
+     * 与 [enter] 配对。degraded 时 [enter] 会直接返回、不计深度，这里的计数会变成
+     * 负数并落到 remove 分支 —— 结果正确（什么都不清），只是不对称，属有意为之：
+     * degraded 意味着已无门控，state 本就不该被设置。
+     */
     fun exit() {
         val currentDepth = (depth.get() ?: 1) - 1
         if (currentDepth <= 0) {
