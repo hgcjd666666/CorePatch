@@ -17,7 +17,7 @@
     <string name="bypass_resource_arsc_restrictions">Bypass resources.arsc alignment restriction</string>
     <string name="bypass_resource_arsc_restrictions_summary">Allow installing APKs whose resources.arsc is compressed or not 4-byte aligned on Android 11 and later.</string>
     <string name="strict_caller_gate">Strict caller gate: trust only root and shell</string>
-    <string name="strict_caller_gate_summary">Only installs initiated by root/shell (su -c pm install, adb install, pm install) get the signature bypass. Installing by tapping an APK in the system installer stops working; use the command line instead.\nNote: apps cannot forge the system installer's UID, so this option does <b>not</b> change how detectable the module is - it only minimizes the trust surface.</string>
+    <string name="strict_caller_gate_summary">Only installs initiated by root/shell (su -c pm install, adb install, pm install) get the signature bypass. Installing by tapping an APK in the system installer stops working; use the command line instead.\nNote: apps cannot forge the UID of the system installer, so this option does <b>not</b> change how detectable the module is - it only minimizes the trust surface.</string>
     <string name="bypass_digest_summary">Allow reinstalling an app with a different signature.</string>
     <string name="bypass_exact_signature_match_summary">Allow split APKs to use different signatures.</string>
     <string name="use_previous_signatures_summary">Always use the installed app\'s signatures during installation.</string>
