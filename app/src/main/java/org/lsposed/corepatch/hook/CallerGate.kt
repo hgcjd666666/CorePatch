@@ -31,18 +31,46 @@ object CallerGate {
     private const val SHELL_UID = 2000
 
     /** 常见系统安装器。国产 ROM 若用了别的包名，看日志补进来即可。 */
-    private val TRUSTED_INSTALLERS = setOf(
+    private val INSTALLER_PACKAGES = setOf(
         "com.android.packageinstaller",
         "com.google.android.packageinstaller",
         "com.android.permissioncontroller",
         "com.google.android.permissioncontroller",
         "com.miui.packageinstaller",
         "com.samsung.android.packageinstaller",
-        // 第三方安装器 / 文件管理器：用户常拿它们装改过的包。
-        // 这些身份同样由 Binder 强制（createSessionInternal 的 mAppOps.checkPackage
-        // 会拒绝伪造），信任它们与信任系统安装器等价，不增加检测面。
-        "bin.mt.plus", // MT 管理器
     )
+
+    /**
+     * 系统安装器的 UID，由 [INSTALLER_PACKAGES] 解析一次后缓存。
+     *
+     * 判定必须走 UID 而不是 installerPackageName：后者是"谁发起安装"，任何持有
+     * INSTALL_PACKAGES 的调用者都能自由设置（createSessionInternal 对它会跳过
+     * mAppOps.checkPackage 校验）。实测例子：用 MT 管理器装包时，
+     * installerPackageName=bin.mt.plus 而 installerUid=10218（系统安装器），
+     * 因为 MT 管理器把安装委托给了系统安装器。
+     * 安装器自身更新（覆盖安装）不会改变 UID，所以解析一次即可。
+     */
+    private val installerUids: Set<Int> by lazy { resolveInstallerUids() }
+
+    private fun resolveInstallerUids(): Set<Int> {
+        val result = mutableSetOf<Int>()
+        runCatching {
+            val ipm = Class.forName("android.app.AppGlobals")
+                .getMethod("getPackageManager").invoke(null) ?: return result
+            val getPackageUid = ipm.javaClass.getMethod(
+                "getPackageUid", String::class.java,
+                Long::class.javaPrimitiveType, Int::class.javaPrimitiveType
+            )
+            INSTALLER_PACKAGES.forEach { name ->
+                runCatching { getPackageUid.invoke(ipm, name, 0L, 0) as Int }
+                    .getOrNull()
+                    ?.takeIf { it >= 0 }
+                    ?.let { result.add(it) }
+            }
+        }
+        alreadyReported("resolved installer uids=$result", -1, null)
+        return result
+    }
 
     /**
      * 找不到任何可挂载的入口时置位：所有绕过退回"全局生效"的旧行为，
@@ -195,15 +223,17 @@ object CallerGate {
             alreadyReported("trusted", uid, pkg)
             return true
         }
-        // 系统安装器：点击安装走的是它。installerPackageName 由
-        // PackageInstallerService.createSessionInternal 的
-        // mAppOps.checkPackage(callingUid, ...) 强制属于调用者，普通应用伪写成
-        // 安装器包名会抛 SecurityException，所以按包名判断是安全的。
-        // 用包名而不是缓存的 UID，安装器自身更新（覆盖安装 UID 不变）或换 ROM
-        // 都只需要维护这个名单即可。
-        // 无论是否开启严格模式都信任它：它的 UID 不可伪造，信任它不增加检测面。
-        if (pkg != null && TRUSTED_INSTALLERS.contains(pkg)) {
-            alreadyReported("trusted", uid, pkg)
+        // 系统安装器：按 UID 判定（见 installerUids 的说明）。
+        // 无论是否开启严格模式都信任它：UID 由内核分配，普通应用伪造不了，
+        // 信任它不增加检测面。
+        if (uid in installerUids) {
+            alreadyReported("trusted(system installer)", uid, pkg)
+            return true
+        }
+        // 兜底：某些 ROM 的安装器以应用 UID 运行并把自己标成名单里的包名。
+        // 这条只在调用者没有能力伪写时成立（普通应用伪写会被 mAppOps.checkPackage 拒绝）。
+        if (pkg != null && INSTALLER_PACKAGES.contains(pkg) && uid !in installerUids) {
+            alreadyReported("trusted(installer name)", uid, pkg)
             return true
         }
         // 严格模式额外排除 system(1000)：部分 ROM 的系统组件以该身份提交安装
