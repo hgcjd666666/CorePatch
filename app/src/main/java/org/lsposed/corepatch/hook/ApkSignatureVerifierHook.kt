@@ -87,7 +87,9 @@ object ApkSignatureVerifierHook : BaseHook() {
             .filter { method -> method.name == "verifyV1Signature" }
             .forEach { verifyV1SignatureMethod ->
                 hookAfter(verifyV1SignatureMethod) { callback ->
-                    val verifyApkPath = callback.args.firstOrNull() as? String
+                    // Android 13+ 的签名是 verifyV1Signature(ParseInput, String apkPath, boolean)，
+                    // 第一个参数不是路径，所以按类型找而不是按下标取
+                    val verifyApkPath = callback.args.firstOrNull { it is String } as? String
                     // 解析阶段没有调用者身份，靠 APK 路径里的 sessionId 反查
                     // （由 InstallCallerGateHook 在 session 阶段写表）
                     val callerTrusted = CallerGate.isTrustedFor(verifyApkPath)
