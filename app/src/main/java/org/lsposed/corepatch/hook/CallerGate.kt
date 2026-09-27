@@ -82,7 +82,9 @@ object CallerGate {
      */
     fun enter(owner: Any?) {
         if (degraded) return
-        val trusted = isTrustedOwner(owner)
+        // 优先复用 session 阶段记下的结论（按 sessionId 反查，install 阶段的
+        // InstallRequest 也有 getSessionId()），拿不到才现场判定身份
+        val trusted = trustFromSessionTable(owner) ?: isTrustedOwner(owner)
         val currentDepth = (depth.get() ?: 0) + 1
         depth.set(currentDepth)
         state.set(if (currentDepth == 1) trusted else state.get() == true || trusted)
@@ -114,9 +116,24 @@ object CallerGate {
         return entry.first
     }
 
-    private fun sessionIdOf(session: Any): Int? = runCatching {
-        session.javaClass.getField("sessionId").getInt(session)
-    }.getOrNull()
+    /** PackageInstallerSession 上是 sessionId 字段，InstallRequest 上是 getSessionId() 方法 */
+    private fun sessionIdOf(owner: Any): Int? {
+        runCatching { return owner.javaClass.getField("sessionId").getInt(owner) }
+        runCatching { return owner.javaClass.getMethod("getSessionId").invoke(owner) as Int }
+        return null
+    }
+
+    /** 按 sessionId 复用 session 阶段记下的结论；表里没有则返回 null */
+    private fun trustFromSessionTable(owner: Any?): Boolean? {
+        if (owner == null) return null
+        val id = sessionIdOf(owner) ?: return null
+        val entry = sessionTrust[id] ?: return null
+        if (entry.second < System.currentTimeMillis()) {
+            sessionTrust.remove(id)
+            return null
+        }
+        return entry.first
+    }
 
     private fun sessionIdFromPath(path: String?): Int? =
         path?.let { sessionDirPattern.find(it)?.groupValues?.get(1)?.toIntOrNull() }
