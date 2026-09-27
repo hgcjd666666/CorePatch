@@ -87,7 +87,12 @@ object ApkSignatureVerifierHook : BaseHook() {
             .filter { method -> method.name == "verifyV1Signature" }
             .forEach { verifyV1SignatureMethod ->
                 hookAfter(verifyV1SignatureMethod) { callback ->
-                    if (Config.isBypassVerificationEnabled() && CallerGate.isTrusted()) {
+                    val verifyApkPath = callback.args.firstOrNull() as? String
+                    // 解析阶段没有调用者身份，靠 APK 路径里的 sessionId 反查
+                    // （由 InstallCallerGateHook 在 session 阶段写表）
+                    val callerTrusted =
+                        CallerGate.isTrusted() || CallerGate.isTrustedApkPath(verifyApkPath)
+                    if (Config.isBypassVerificationEnabled() && callerTrusted) {
                         val throwable = callback.throwable
                         var parseError: Int? = null
                         if (parseResultClazz != null &&

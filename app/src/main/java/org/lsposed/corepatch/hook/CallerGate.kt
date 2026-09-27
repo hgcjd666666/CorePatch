@@ -3,6 +3,7 @@ package org.lsposed.corepatch.hook
 import android.util.Log
 import org.lsposed.corepatch.Config
 import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 安装事务级的调用者门控。
@@ -51,6 +52,19 @@ object CallerGate {
     private val state = ThreadLocal<Boolean>()
     private val depth = ThreadLocal<Int>()
 
+    /**
+     * sessionId -> (是否可信, 过期时间)。
+     *
+     * 解析阶段（ApkSignatureVerifier 之类）只能拿到 APK 路径，拿不到调用者身份。
+     * 但 session 安装时 APK 位于 /data/app/vmdl<sessionId>.tmp/ 下，路径里就带着
+     * sessionId，而 session 上存着创建者的真实 mInstallerUid。于是在 session 阶段
+     * （能可靠拿到身份）把结论记进这张表，解析时按路径反查即可 —— 不依赖 ThreadLocal，
+     * 也就不会因为跨线程或热重载而失效。
+     */
+    private val sessionTrust = ConcurrentHashMap<Int, Pair<Boolean, Long>>()
+    private val sessionDirPattern = Regex("/vmdl(\\d+)\\.tmp/")
+    private const val SESSION_TRUST_TTL_MS = 15 * 60 * 1000L
+
     /** 同一 (uid, 包名) 只记一次，避免探针循环刷屏 */
     private val reported: MutableSet<String> =
         Collections.synchronizedSet(mutableSetOf<String>())
@@ -72,6 +86,44 @@ object CallerGate {
         val currentDepth = (depth.get() ?: 0) + 1
         depth.set(currentDepth)
         state.set(if (currentDepth == 1) trusted else state.get() == true || trusted)
+    }
+
+    /**
+     * 在 session 阶段记录该 session 的安装者是否可信，供解析阶段按 APK 路径反查。
+     * 必须在任何 APK 解析之前调用（挂在 session 的校验/安装入口即可）。
+     */
+    fun rememberSession(session: Any?) {
+        if (session == null) return
+        val id = sessionIdOf(session) ?: return
+        val trusted = isTrustedOwner(session)
+        sessionTrust[id] = trusted to (System.currentTimeMillis() + SESSION_TRUST_TTL_MS)
+        pruneSessions()
+        if (trusted) {
+            Log.i(TAG, "caller gate: session $id marked trusted for path lookup")
+        }
+    }
+
+    /** 按 APK 路径反查该次安装是否可信（路径形如 /data/app/vmdl<sessionId>.tmp/...） */
+    fun isTrustedApkPath(apkPath: String?): Boolean {
+        val id = sessionIdFromPath(apkPath) ?: return false
+        val entry = sessionTrust[id] ?: return false
+        if (entry.second < System.currentTimeMillis()) {
+            sessionTrust.remove(id)
+            return false
+        }
+        return entry.first
+    }
+
+    private fun sessionIdOf(session: Any): Int? = runCatching {
+        session.javaClass.getField("sessionId").getInt(session)
+    }.getOrNull()
+
+    private fun sessionIdFromPath(path: String?): Int? =
+        path?.let { sessionDirPattern.find(it)?.groupValues?.get(1)?.toIntOrNull() }
+
+    private fun pruneSessions() {
+        val now = System.currentTimeMillis()
+        sessionTrust.entries.removeAll { it.value.second < now }
     }
 
     fun exit() {

@@ -54,7 +54,11 @@ object InstallCallerGateHook : BaseHook() {
         clazz.declaredMethods
             .filter { it.parameterCount == 0 && SESSION_METHODS.contains(it.name) }
             .forEach { method ->
-                hookBefore(method) { callback -> CallerGate.enter(callback.thisObject) }
+                hookBefore(method) { callback ->
+                    // 记进全局表：解析阶段拿不到身份，但能从 APK 路径里的 sessionId 反查
+                    CallerGate.rememberSession(callback.thisObject)
+                    CallerGate.enter(callback.thisObject)
+                }
                 hookAfter(method) { CallerGate.exit() }
                 count++
             }
