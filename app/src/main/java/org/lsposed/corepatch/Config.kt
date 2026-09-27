@@ -7,7 +7,6 @@ object Config {
     const val BYPASS_DOWNGRADE = "downgrade"
     const val BYPASS_VERIFICATION = "bypass_verification"
     const val ALLOW_UNSIGNED_APK = "allow_unsigned_apk"
-    const val STRICT_CALLER_GATE = "strict_caller_gate"
     const val DISTRUST_SYSTEM_INSTALLER = "distrust_system_installer"
     const val BYPASS_RESOURCE_ARSC_RESTRICTIONS = "bypass_resource_arsc_restrictions"
     const val BYPASS_DIGEST = "bypass_digest"
@@ -22,7 +21,6 @@ object Config {
         BYPASS_DOWNGRADE,
         BYPASS_VERIFICATION,
         ALLOW_UNSIGNED_APK,
-        STRICT_CALLER_GATE,
         DISTRUST_SYSTEM_INSTALLER,
         BYPASS_RESOURCE_ARSC_RESTRICTIONS,
         BYPASS_DIGEST,
@@ -79,9 +77,6 @@ object Config {
         return prefs.getBoolean(DISTRUST_SYSTEM_INSTALLER, false)
     }
 
-    fun isStrictCallerGateEnabled(): Boolean {
-        return prefs.getBoolean(STRICT_CALLER_GATE, false)
-    }
 
     fun isBypassResourceArscRestrictionsEnabled(): Boolean {
         return prefs.getBoolean(BYPASS_RESOURCE_ARSC_RESTRICTIONS, false)

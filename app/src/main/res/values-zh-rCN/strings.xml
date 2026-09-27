@@ -6,15 +6,13 @@
     <string name="bypass_downgrade_summary">允许应用在安装新版本的情况下直接覆盖安装旧版本</string>
     <string name="bypass_verification">禁用软件包管理器签名验证</string>
     <string name="allow_unsigned_apk">允许安装未签名 APK</string>
-    <string name="allow_unsigned_apk_summary">允许安装完全不带签名的 APK（既无 v1 的 META-INF 签名，也无 v2/v3 签名块）。仅"签名校验不通过"的包<b>不需要</b>此项。\n<b>极易被检测</b>：任何应用提交一个未签名 APK、再读安装会话的 EXTRA_STATUS 就能确认它已开启。除非确实需要，否则请保持关闭。</string>
+    <string name="allow_unsigned_apk_summary">允许安装完全没有签名的 APK。这是最容易被检测的选项，非必要不要开启。</string>
     <string name="bypass_verification_summary">关闭安装应用时的签名验证，可以安装被篡改的应用</string>
     <string name="bypass_resource_arsc_restrictions">绕过 resources.arsc 对齐限制</string>
     <string name="bypass_resource_arsc_restrictions_summary">允许在 Android 11 及以上版本安装 resources.arsc 已压缩或未按 4 字节对齐的 APK</string>
     <string name="bypass_digest">禁用 APK 签名验证</string>
-    <string name="strict_caller_gate">严格调用者门控：不信任 system 身份</string>
-    <string name="strict_caller_gate_summary">root、shell 与系统安装器始终被信任，点击安装照常可用。开启此项后会额外停止信任以 system（1000）身份提交的安装（部分 ROM 的系统组件走这条路）。\n注意：普通应用无法伪造系统安装器的 UID，所以此项<b>不会</b>改变可被检测的程度，只是把信任面收到最小。</string>
     <string name="distrust_system_installer">不信任系统安装器发起的安装</string>
-    <string name="distrust_system_installer_summary">任何应用都能通过 Intent 拉起系统安装器，诱导你点击"安装"，而这条路径默认是被信任的。开启此项后只有 root / shell 的安装被信任，需要改用 su -c pm install 或 adb install。\n这是安全开关而非反检测开关 —— 两种情况下普通应用都无法伪造安装器身份。</string>
+    <string name="distrust_system_installer_summary">开启后只能用命令行安装（pm install / adb install），点击安装不再生效。</string>
     <string name="bypass_digest_summary">允许直接覆盖安装同包名不同签名的应用</string>
     <string name="bypass_exact_signature_match">禁用唯一签名匹配</string>
     <string name="bypass_exact_signature_match_summary">禁用多个 APK 之间的唯一签名匹配，从而允许安装应用时每个分包 APK 使用不同签名。仅在确有必要时再启用此项功能！</string>

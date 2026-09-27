@@ -6,7 +6,7 @@
     <string name="bypass_downgrade">Bypass downgrade</string>
     <string name="bypass_verification">Bypass verification</string>
     <string name="allow_unsigned_apk">Allow installing unsigned APKs</string>
-    <string name="allow_unsigned_apk_summary">Allow installing APKs that carry no signature at all (no v1 META-INF signature, no v2/v3 signing block). Packages whose signature merely fails to verify do NOT need this option.\n<b>Easily detectable</b>: any app can confirm it by submitting an unsigned APK and reading the install session EXTRA_STATUS. Leave it off unless you really need it.</string>
+    <string name="allow_unsigned_apk_summary">Allow installing APKs that have no signature at all. This is the easiest option to detect; leave it off unless you need it.</string>
     <string name="bypass_digest">Bypass digest</string>
     <string name="bypass_exact_signature_match">Bypass exact signature match</string>
     <string name="use_previous_signatures">Use previous signatures</string>
@@ -16,10 +16,8 @@
     <string name="bypass_verification_summary">Allow installing APKs with invalid or modified signatures.</string>
     <string name="bypass_resource_arsc_restrictions">Bypass resources.arsc alignment restriction</string>
     <string name="bypass_resource_arsc_restrictions_summary">Allow installing APKs whose resources.arsc is compressed or not 4-byte aligned on Android 11 and later.</string>
-    <string name="strict_caller_gate">Strict caller gate: do not trust the system identity</string>
-    <string name="strict_caller_gate_summary">Root, shell and the system installer are always trusted. This option additionally stops trusting installs submitted under the system (1000) identity, which some ROMs use for their own components.\nNote: apps cannot forge the UID of the system installer, so this option does <b>not</b> change how detectable the module is - it only minimizes the trust surface.</string>
     <string name="distrust_system_installer">Do not trust the system installer</string>
-    <string name="distrust_system_installer_summary">Any app can launch the system installer via an intent and trick you into tapping Install, and that path is trusted by default. With this on, only root / shell installs are trusted: use su -c pm install or adb install.\nThis is a safety switch rather than an anti-detection one - apps cannot forge the installer UID either way.</string>
+    <string name="distrust_system_installer_summary">When on, only command line installs (pm install / adb install) work; tapping Install no longer bypasses anything.</string>
     <string name="bypass_digest_summary">Allow reinstalling an app with a different signature.</string>
     <string name="bypass_exact_signature_match_summary">Allow split APKs to use different signatures.</string>
     <string name="use_previous_signatures_summary">Always use the installed app\'s signatures during installation.</string>

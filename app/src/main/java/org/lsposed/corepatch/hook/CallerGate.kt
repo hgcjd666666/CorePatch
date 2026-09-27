@@ -257,8 +257,8 @@ object CallerGate {
                 return true
             }
         }
-        // 严格模式额外排除 system(1000)：部分 ROM 的系统组件以该身份提交安装
-        if (!Config.isStrictCallerGateEnabled() && uid == SYSTEM_UID) {
+        // system(1000)：部分 ROM 的系统组件以该身份提交安装，该身份不可伪造
+        if (uid == SYSTEM_UID) {
             alreadyReported("trusted", uid, pkg)
             return true
         }

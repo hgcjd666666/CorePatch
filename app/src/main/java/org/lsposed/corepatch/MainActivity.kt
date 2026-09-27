@@ -64,11 +64,6 @@ class MainActivity : Activity() {
             getString(R.string.allow_unsigned_apk_summary),
             Config.ALLOW_UNSIGNED_APK
         )
-        val strictCallerGate = SwitchData(
-            getString(R.string.strict_caller_gate),
-            getString(R.string.strict_caller_gate_summary),
-            Config.STRICT_CALLER_GATE
-        )
         val distrustSystemInstaller = SwitchData(
             getString(R.string.distrust_system_installer),
             getString(R.string.distrust_system_installer_summary),
@@ -112,7 +107,6 @@ class MainActivity : Activity() {
             bypassDowngrade,
             bypassVerification,
             allowUnsignedApk,
-            strictCallerGate,
             distrustSystemInstaller,
             bypassResourceArscRestrictions,
             bypassDigest,
