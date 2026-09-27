@@ -1,7 +1,7 @@
 package org.lsposed.corepatch.hook
 
 import android.annotation.SuppressLint
-import android.util.Log
+import org.lsposed.corepatch.XposedHelper
 import org.lsposed.corepatch.XposedHelper.findClassIfExists
 import org.lsposed.corepatch.XposedHelper.hookAfter
 import org.lsposed.corepatch.XposedHelper.hookBefore
@@ -36,13 +36,11 @@ import org.lsposed.corepatch.XposedHelper.hookBefore
 object InstallCallerGateHook : BaseHook() {
     override val name = "InstallCallerGateHook"
 
-    private const val TAG = "CorePatch"
-
     @SuppressLint("PrivateApi")
     override fun hook() {
         val sessionHooks = hookSession()
         val installHooks = hookInstallEntry()
-        Log.i(TAG, "caller gate: session hooks=$sessionHooks, install hooks=$installHooks")
+        XposedHelper.log("caller gate: session hooks=$sessionHooks, install hooks=$installHooks")
         if (sessionHooks == 0 && installHooks == 0) {
             CallerGate.markDegraded("no install entry point matched")
         }

@@ -2,7 +2,6 @@ package org.lsposed.corepatch
 
 import android.annotation.SuppressLint
 import android.graphics.Point
-import android.util.Log
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Executable
@@ -117,10 +116,7 @@ object XposedHelper {
      */
     private fun registerHookId(id: String) {
         if (!installedHookIds.add(id)) {
-            Log.w(
-                "CorePatch",
-                "duplicate hook id: later registration replaces the earlier one -> $id"
-            )
+            log("duplicate hook id: later registration replaces the earlier one -> $id")
         }
     }
 

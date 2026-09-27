@@ -2,15 +2,13 @@ package org.lsposed.corepatch.hook
 
 import android.annotation.SuppressLint
 import android.os.Build
-import android.util.Log
 import org.lsposed.corepatch.Config
+import org.lsposed.corepatch.XposedHelper
 import org.lsposed.corepatch.XposedHelper.hookBefore
 import org.lsposed.corepatch.XposedHelper.hostClassLoader
 
 object ScanPackageUtilsHook : BaseHook() {
     override val name = "ScanPackageUtilsHook"
-
-    private const val TAG = "CorePatch"
 
     @SuppressLint("PrivateApi")
     override fun hook() {
@@ -29,9 +27,7 @@ object ScanPackageUtilsHook : BaseHook() {
             // 默认关闭时本方法仍受调用者门控保护：能走到这里的包必须先通过解析层，
             // 而未签名探针在解析层就被拦住了。
             val bypass = Config.isBypassVerificationEnabled() && (trusted || allowUnsigned)
-            Log.i(
-                TAG,
-                "assertMinSignatureSchemeIsValid: trusted=$trusted, allowUnsigned=$allowUnsigned, " +
+            XposedHelper.log("assertMinSignatureSchemeIsValid: trusted=$trusted, allowUnsigned=$allowUnsigned, " +
                     "bypass=$bypass, pkg=" + pkg?.javaClass?.simpleName
             )
             if (bypass) {

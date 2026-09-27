@@ -5,8 +5,8 @@ import android.app.Application
 import android.content.pm.PackageManager
 import android.content.pm.Signature
 import android.os.Build
-import android.util.Log
 import org.lsposed.corepatch.Config
+import org.lsposed.corepatch.XposedHelper
 import org.lsposed.corepatch.Constant
 import org.lsposed.corepatch.XposedHelper.findClassIfExists
 import org.lsposed.corepatch.XposedHelper.hookAfter
@@ -118,17 +118,13 @@ object ApkSignatureVerifierHook : BaseHook() {
                                 if (apkPath != null &&
                                     !ApkSignatureMaterials.hasSignatureMaterial(apkPath)
                                 ) {
-                                    Log.i(
-                                        "CorePatch",
-                                        "skip unsigned apk (allow_unsigned_apk is off): $apkPath"
+                                    XposedHelper.log("skip unsigned apk (allow_unsigned_apk is off): $apkPath"
                                     )
                                     return@hookAfter
                                 }
                             }
 
-                            Log.i(
-                                "CorePatch",
-                                "bypass signature failure: path=" +
+                            XposedHelper.log("bypass signature failure: path=" +
                                     callback.args[if (parseError == null) 0 else 1]
                             )
 

@@ -1,7 +1,6 @@
 package org.lsposed.corepatch
 
 import android.os.Build
-import android.util.Log
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface
 import org.lsposed.corepatch.Config.printAllConfig
@@ -47,7 +46,7 @@ class XposedMain : XposedModule() {
      */
     override fun onHotReloading(param: XposedModuleInterface.HotReloadingParam): Boolean {
         // 热重载的关键日志不受 BuildConfig.DEBUG 限制，release 包也必须可见
-        Log.i(TAG, "onHotReloading: allow hot reload")
+        XposedHelper.log("onHotReloading: allow hot reload")
         return true
     }
 
@@ -88,16 +87,12 @@ class XposedMain : XposedModule() {
         // 覆盖了默认实现就必须自己补上：卸载旧代次安装的全部 hook
         oldHandles.forEach { runCatching { it.unhook() } }
 
-        Log.i(
-            TAG,
-            "onHotReloaded: ${param.processName}, ${oldHandles.size} old hooks, " +
+        XposedHelper.log("onHotReloaded: ${param.processName}, ${oldHandles.size} old hooks, " +
                 "${candidates.size} loader candidates, host=$hostClassLoader"
         )
         if (!param.isSystemServer) return
         if (hostClassLoader == null) {
-            Log.w(
-                TAG,
-                "onHotReloaded: no candidate loader can load system server classes, skip reinstall"
+            XposedHelper.log("onHotReloaded: no candidate loader can load system server classes, skip reinstall"
             )
             return
         }
@@ -112,7 +107,6 @@ class XposedMain : XposedModule() {
     }
 
     companion object {
-        private const val TAG = "CorePatch"
 
         private val HOOKS: List<BaseHook> = listOf(
             ApkSignatureVerifierHook,

@@ -2,7 +2,6 @@ package org.lsposed.corepatch.hook
 
 import android.annotation.SuppressLint
 import android.os.Build
-import android.util.Log
 import org.lsposed.corepatch.Config
 import org.lsposed.corepatch.XposedHelper
 import org.lsposed.corepatch.XposedHelper.hookBefore
@@ -11,7 +10,6 @@ import org.lsposed.corepatch.XposedHelper.log
 import java.util.Collections
 
 object PackageManagerServiceUtilsHook : BaseHook() {
-    private const val TAG = "CorePatch"
 
     /** 只对第一次见到的包名打"未绕过"，避免开机扫描时刷屏 */
     private val reportedNotBypassed: MutableSet<String> =
@@ -37,19 +35,17 @@ object PackageManagerServiceUtilsHook : BaseHook() {
         val verifySignaturesMethod =
             packageManagerServiceUtilsClazz.declaredMethods.first { m -> m.name == "verifySignatures" && m.returnType == Boolean::class.java }
         val deoptimized = XposedHelper.deoptimize(verifySignaturesMethod)
-        Log.i(
-            TAG,
-            "verifySignatures hook installed: deoptimize=$deoptimized, " +
+        XposedHelper.log("verifySignatures hook installed: deoptimize=$deoptimized, " +
                 "bypass_verification=${Config.isBypassVerificationEnabled()}, " +
                 "method=${verifySignaturesMethod.toGenericString()}"
         )
         hookBefore(verifySignaturesMethod) { callback ->
             val pkgName = packageNameOf(callback.args.firstOrNull())
             if (Config.isBypassVerificationEnabled()) {
-                Log.i(TAG, "verifySignatures: BYPASSED, pkg=$pkgName")
+                XposedHelper.log("verifySignatures: BYPASSED, pkg=$pkgName")
                 callback.returnAndSkip(false)
             } else if (reportedNotBypassed.add(pkgName ?: "<unknown>")) {
-                Log.i(TAG, "verifySignatures: NOT bypassed (bypass_verification=false), pkg=$pkgName")
+                XposedHelper.log("verifySignatures: NOT bypassed (bypass_verification=false), pkg=$pkgName")
             }
         }
 

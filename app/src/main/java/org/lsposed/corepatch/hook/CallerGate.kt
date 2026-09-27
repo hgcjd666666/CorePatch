@@ -1,7 +1,7 @@
 package org.lsposed.corepatch.hook
 
-import android.util.Log
 import org.lsposed.corepatch.Config
+import org.lsposed.corepatch.XposedHelper
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap
  * 传入的对象可以是 session 也可以是 InstallRequest，[installerUidOf] 会自己适配。
  */
 object CallerGate {
-    private const val TAG = "CorePatch"
 
     private const val ROOT_UID = 0
     private const val SYSTEM_UID = 1000
@@ -71,7 +70,7 @@ object CallerGate {
 
     fun markDegraded(reason: String) {
         degraded = true
-        Log.e(TAG, "caller gate degraded: $reason, bypasses fall back to global")
+        XposedHelper.log("caller gate degraded: $reason, bypasses fall back to global")
     }
 
     fun isTrusted(): Boolean = degraded || state.get() == true
@@ -101,7 +100,7 @@ object CallerGate {
         sessionTrust[id] = trusted to (System.currentTimeMillis() + SESSION_TRUST_TTL_MS)
         pruneSessions()
         if (trusted) {
-            Log.i(TAG, "caller gate: session $id marked trusted for path lookup")
+            XposedHelper.log("caller gate: session $id marked trusted for path lookup")
         }
     }
 
@@ -215,7 +214,7 @@ object CallerGate {
     /** 同一 (结论, uid, 包名) 只记一次，避免探针循环或开机扫描刷屏 */
     private fun alreadyReported(verdict: String, uid: Int, pkg: String?): Boolean {
         if (!reported.add("$verdict:$uid/$pkg")) return true
-        Log.i(TAG, "caller gate: $verdict, installer uid=$uid pkg=$pkg")
+        XposedHelper.log("caller gate: $verdict, installer uid=$uid pkg=$pkg")
         return false
     }
 
