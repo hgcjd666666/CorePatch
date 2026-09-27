@@ -120,6 +120,12 @@ object ApkSignatureVerifierHook : BaseHook() {
                                 }
                             }
 
+                            Log.i(
+                                "CorePatch",
+                                "bypass signature failure: path=" +
+                                    callback.args[if (parseError == null) 0 else 1]
+                            )
+
                             var signaturesBefore: Any? = null
                             // use previous signatures, get from package manager
                             if (Config.isUsePreviousSignaturesEnabled()) {
